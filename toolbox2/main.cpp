@@ -34,11 +34,13 @@ int main( int argc, char** argv )
     
     Mat element = getStructuringElement( 2, Size( 2*morph_size + 1, 2*morph_size+1 ), Point( morph_size, morph_size ) );
     
-    morphologyEx( src_gray, src_gray, 0, element );
+    Mat src_gray_morph;
+    morphologyEx( src_gray, src_gray_morph, 0, element );
 
     // blur image 3x3 pixels
     
-    blur( src_gray, src_gray, Size(3,3) );
+    Mat src_gray_morph_blur;
+    blur( src_gray_morph, src_gray_morph_blur, Size(3,3) );
     
     // make variables
     
@@ -47,7 +49,7 @@ int main( int argc, char** argv )
     vector<Vec4i> hierarchy;
     
     /// Detect edges using canny
-    Canny( src_gray, canny_output, thresh, thresh*2, 3 );
+    Canny( src_gray_morph_blur, canny_output, thresh, thresh*2, 3 );
     
     /// Find contours
     findContours( canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
