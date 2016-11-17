@@ -50,11 +50,13 @@ int main( int argc, char** argv )
     int largest_contour_index=0;
     int largest_area=0;
     
+    cout << "Starting\n";
     
     for( int i = 0; i< contoursPerspective.size(); i++ ){
         
-        approxPolyDP(Mat(contoursPerspective[i]),contoursPerspective[i],3,true);
-        if(contoursPerspective.size()==4){
+        approxPolyDP(Mat(contoursPerspective[i]),contoursPerspective[i],10,true);
+        
+        if(contoursPerspective[i].size()==4){
         double a=contourArea( contoursPerspective[i],false);  //  Find the area of contour
         if(a>largest_area){
             largest_area=a;
@@ -66,15 +68,33 @@ int main( int argc, char** argv )
     vector<vector<Point> > contours_poly(1);
     
     contours_poly[0] = contoursPerspective[largest_contour_index];
+    cout << "Largest contour index is: " << largest_contour_index << "\n";
     
     Rect boundRect=boundingRect(contoursPerspective[largest_contour_index]);
+    cout << contours_poly[0].size();
     if(contours_poly[0].size()==4){
+        cout << "found a thing/n";
         std::vector<Point2f> quad_pts;
         std::vector<Point2f> squre_pts;
+        
+        
+        
         quad_pts.push_back(Point2f(contours_poly[0][0].x,contours_poly[0][0].y));
         quad_pts.push_back(Point2f(contours_poly[0][1].x,contours_poly[0][1].y));
         quad_pts.push_back(Point2f(contours_poly[0][3].x,contours_poly[0][3].y));
         quad_pts.push_back(Point2f(contours_poly[0][2].x,contours_poly[0][2].y));
+        
+        
+        
+        // This rectangle should be the right size (6" x 0.75" x some factor to boost resolution)
+        
+        
+        double length = cv::norm(quad_pts[0]-quad_pts[1]);
+        double length2 = cv::norm(quad_pts[2]-quad_pts[3]);
+
+        cout << length << "asdf" << length2;
+        
+        
         
         squre_pts.push_back(Point2f(boundRect.x,boundRect.y));
         squre_pts.push_back(Point2f(boundRect.x,boundRect.y+boundRect.height));
@@ -83,7 +103,6 @@ int main( int argc, char** argv )
         
         Mat transmtx = getPerspectiveTransform(quad_pts,squre_pts);
         Mat transformed = Mat::zeros(src.rows, src.cols, CV_8UC3);
-        
         
         
         warpPerspective(src, transformed, transmtx, src.size());
