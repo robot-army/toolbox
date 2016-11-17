@@ -90,38 +90,41 @@ int main( int argc, char** argv )
         
         
         double length = cv::norm(quad_pts[0]-quad_pts[1]);
-        double length2 = cv::norm(quad_pts[2]-quad_pts[3]);
+        double length2 = cv::norm(quad_pts[1]-quad_pts[3]);
 
-        cout << length << "asdf" << length2;
+        cout << "\nlength " << length << "\nlength2 " << length2 << "\nquad_pts[0] " << quad_pts[0] << "\nquad_pts[1] " << quad_pts[1] << "\naspectratio " << length/length2;
         
+        length2 = length/8;
         
-        
+
         squre_pts.push_back(Point2f(boundRect.x,boundRect.y));
-        squre_pts.push_back(Point2f(boundRect.x,boundRect.y+boundRect.height));
-        squre_pts.push_back(Point2f(boundRect.x+boundRect.width,boundRect.y));
-        squre_pts.push_back(Point2f(boundRect.x+boundRect.width,boundRect.y+boundRect.height));
+        squre_pts.push_back(Point2f(boundRect.x,boundRect.y+length));
+        squre_pts.push_back(Point2f(boundRect.x+length2,boundRect.y));
+        squre_pts.push_back(Point2f(boundRect.x+length2,boundRect.y+length));
         
         Mat transmtx = getPerspectiveTransform(quad_pts,squre_pts);
         Mat transformed = Mat::zeros(src.rows, src.cols, CV_8UC3);
         
         
-        warpPerspective(src, transformed, transmtx, src.size());
-        Point P1=contours_poly[0][0];
-        Point P2=contours_poly[0][1];
-        Point P3=contours_poly[0][2];
-        Point P4=contours_poly[0][3];
-        
-        
-        line(src,P1,P2, Scalar(0,0,255),1,CV_AA,0);
-        line(src,P2,P3, Scalar(0,0,255),1,CV_AA,0);
-        line(src,P3,P4, Scalar(0,0,255),1,CV_AA,0);
-        line(src,P4,P1, Scalar(0,0,255),1,CV_AA,0);
-        rectangle(src,boundRect,Scalar(0,255,0),1,8,0);
-        rectangle(transformed,boundRect,Scalar(0,255,0),1,8,0);
-        
-        imshow("quadrilateral", transformed);
-        imshow("dst",dstPerspective);
-        imshow("src",src);
+        warpPerspective(src, src_gray, transmtx, src.size());
+//        Point P1=contours_poly[0][0];
+//        Point P2=contours_poly[0][1];
+//        Point P3=contours_poly[0][2];
+//        Point P4=contours_poly[0][3];
+//        
+//        
+//        line(src,P1,P2, Scalar(0,0,255),1,CV_AA,0);
+//        line(src,P2,P3, Scalar(0,0,255),1,CV_AA,0);
+//        line(src,P3,P4, Scalar(0,0,255),1,CV_AA,0);
+//        line(src,P4,P1, Scalar(0,0,255),1,CV_AA,0);
+//        
+//        rectangle(src,boundRect,Scalar(0,255,0),1,8,0);
+//        rectangle(transformed,boundRect,Scalar(0,255,0),1,8,0);
+//        
+//        imshow("quadrilateral", transformed);
+//        imshow("dst",dstPerspective);
+//        imshow("src",src);
+        imshow("src_gray",src_gray);
     }
 
     
@@ -132,78 +135,68 @@ int main( int argc, char** argv )
     
      drawContours( dstPerspective,contoursPerspective, largest_contour_index, Scalar(255,255,255),CV_FILLED, 8, hierarchyPerspective );
     
-    
-    
     imshow("dst2",dstPerspective);
     
+    // ehhh, 'close' it with a morph size of 2?
     
+    morph_size = 2;
     
+    Mat element = getStructuringElement( 2, Size( 2*morph_size + 1, 2*morph_size+1 ), Point( morph_size, morph_size ) );
     
-    
-    
-    
+    Mat src_gray_morph;
+    morphologyEx( src_gray, src_gray_morph, 0, element );
 
+    // blur image 3x3 pixels
+    
+    Mat src_gray_morph_blur;
+    blur( src_gray_morph, src_gray_morph_blur, Size(3,3) );
+    
+    // make variables
+    
+    Mat canny_output;
+    vector<vector<Point> > contours;
+    vector<Vec4i> hierarchy;
+    
+    /// Detect edges using canny or threshold and get the outside edge (badness)
+    Canny( src_gray_morph_blur, canny_output, thresh, thresh*2, 3 );
+    
+ //   threshold(src_gray_morph_blur, canny_output, 70, 255, CV_THRESH_BINARY_INV);
+    
+    /// Find contours
+    findContours( canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+    
+    // Make somewhere to put the output
+    Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
+    
+    
+    // Sort contours by size
+    sort(contours.begin(), contours.end(), [](const vector<Point>& c1, const vector<Point>& c2){
+        return contourArea(c1, false) < contourArea(c2, false);
+    });
+    
+    // Loop over all the contours, ending with the largest
+    int i=0;
+    
+    for (i = 0; i<contours.size(); i++)
+    {
 
-//    // ehhh, 'close' it with a morph size of 2?
-//    
-//    morph_size = 2;
-//    
-//    Mat element = getStructuringElement( 2, Size( 2*morph_size + 1, 2*morph_size+1 ), Point( morph_size, morph_size ) );
-//    
-//    Mat src_gray_morph;
-//    morphologyEx( src_gray, src_gray_morph, 0, element );
+        // Pick a random colour
+        Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+        
+        // Draw the contours filled
+        drawContours( drawing, contours, i, color, -1, 8, hierarchy, 0, Point() );
+        
+    }
+    
+    
+    // Make windows and show output
+    
+    char* source_window = "Source";
+    namedWindow( source_window, CV_WINDOW_NORMAL );
+    imshow( source_window, src_gray );
+    namedWindow( "Contours", CV_WINDOW_NORMAL );
+    imshow( "Contours", drawing );
 //
-//    // blur image 3x3 pixels
-//    
-//    Mat src_gray_morph_blur;
-//    blur( src_gray_morph, src_gray_morph_blur, Size(3,3) );
-//    
-//    // make variables
-//    
-//    Mat canny_output;
-//    vector<vector<Point> > contours;
-//    vector<Vec4i> hierarchy;
-//    
-//    /// Detect edges using canny or threshold and get the outside edge (badness)
-////    Canny( src_gray_morph_blur, canny_output, thresh, thresh*2, 3 );
-//    
-//    threshold(src_gray_morph_blur, canny_output, 70, 255, CV_THRESH_BINARY_INV);
-//    
-//    /// Find contours
-//    findContours( canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
-//    
-//    // Make somewhere to put the output
-//    Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
-//    
-//    
-//    // Sort contours by size
-//    sort(contours.begin(), contours.end(), [](const vector<Point>& c1, const vector<Point>& c2){
-//        return contourArea(c1, false) < contourArea(c2, false);
-//    });
-//    
-//    // Loop over all the contours, ending with the largest
-//    int i=0;
-//    
-//    for (i = 0; i<contours.size(); i++)
-//    {
-//
-//        // Pick a random colour
-//        Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-//        
-//        // Draw the contours filled
-//        drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point() );
-//        
-//    }
-//    
-//    
-//    // Make windows and show output
-//    
-//    char* source_window = "Source";
-//    namedWindow( source_window, CV_WINDOW_NORMAL );
-//    imshow( source_window, src_gray );
-//    namedWindow( "Contours", CV_WINDOW_NORMAL );
-//    imshow( "Contours", drawing );
-//    
     
     waitKey(0);
     return(0);
