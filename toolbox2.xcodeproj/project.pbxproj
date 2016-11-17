@@ -24,8 +24,8 @@
 
 /* Begin PBXFileReference section */
 		DE115A2F1DDB9865007DAAD5 /* toolbox2 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = toolbox2; sourceTree = BUILT_PRODUCTS_DIR; };
-		DE115A321DDB9865007DAAD5 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		DE115A391DDB9D40007DAAD5 /* test.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = test.bmp; path = ../../../../toolbox_cpp/test.bmp; sourceTree = "<group>"; };
+		DE115A321DDB9865007DAAD5 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../../toolbox2/main.cpp; sourceTree = BUILT_PRODUCTS_DIR; };
+		DE115A391DDB9D40007DAAD5 /* test.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = test.bmp; path = /Users/robotarmy/Documents/toolbox/toolbox2/build/Debug/../../../../../toolbox_cpp/test.bmp; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -282,6 +282,7 @@
 				DE115A381DDB9865007DAAD5 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
