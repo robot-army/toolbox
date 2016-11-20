@@ -8,7 +8,7 @@ using namespace cv;
 using namespace std;
 
 Mat src; Mat src_gray;
-int thresh = 100;
+int thresh = 20;
 int max_thresh = 255;
 RNG rng(12345);
 
@@ -23,10 +23,12 @@ void thresh_callback(int, void* );
 int main( int argc, char** argv )
 {
     /// Load source image
-    src = imread("test.jpg", 1 );
+    src = imread("test2.jpg", 1 );
+        imshow("Source", src);
  
     /// Convert image to gray
     cvtColor( src, src_gray, CV_BGR2GRAY );
+    imshow("Source Gray",src_gray);
     
     // sort out perspective here
     
@@ -124,18 +126,18 @@ int main( int argc, char** argv )
 //        imshow("quadrilateral", transformed);
 //        imshow("dst",dstPerspective);
 //        imshow("src",src);
-        imshow("src_gray",src_gray);
+
     }
 
+            imshow("src_gray and xfmd",src_gray);
     
     
     
-    
-    // Draw the picture
-    
-     drawContours( dstPerspective,contoursPerspective, largest_contour_index, Scalar(255,255,255),CV_FILLED, 8, hierarchyPerspective );
-    
-    imshow("dst2",dstPerspective);
+//    // Draw the picture
+//    
+//     drawContours( dstPerspective,contoursPerspective, largest_contour_index, Scalar(255,255,255),CV_FILLED, 8, hierarchyPerspective );
+//    
+//    imshow("dst2",dstPerspective);
     
     // ehhh, 'close' it with a morph size of 2?
     
@@ -145,6 +147,8 @@ int main( int argc, char** argv )
     
     Mat src_gray_morph;
     morphologyEx( src_gray, src_gray_morph, 0, element );
+    
+        imshow("Source Gray Morph", src_gray_morph);
 
     // blur image 3x3 pixels
     
@@ -158,10 +162,19 @@ int main( int argc, char** argv )
     vector<Vec4i> hierarchy;
     
     /// Detect edges using canny or threshold and get the outside edge (badness)
-    Canny( src_gray_morph_blur, canny_output, thresh, thresh*2, 3 );
+ //   Canny( src_gray_morph_blur, canny_output, thresh, thresh*2, 3 );
     
- //   threshold(src_gray_morph_blur, canny_output, 70, 255, CV_THRESH_BINARY_INV);
+
+
     
+    
+    cvtColor( src_gray_morph_blur, src_gray_morph_blur, CV_BGR2GRAY );
+
+    threshold(src_gray_morph_blur, canny_output, 150,255,THRESH_BINARY_INV);
+    
+    
+    imshow("Canny output",canny_output);
+
     /// Find contours
     findContours( canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
     
@@ -191,12 +204,18 @@ int main( int argc, char** argv )
     
     // Make windows and show output
     
-    char* source_window = "Source";
-    namedWindow( source_window, CV_WINDOW_NORMAL );
-    imshow( source_window, src_gray );
-    namedWindow( "Contours", CV_WINDOW_NORMAL );
-    imshow( "Contours", drawing );
-//
+//    char* source_window = "Source";
+//    namedWindow( source_window, CV_WINDOW_NORMAL );
+//    imshow( source_window, src_gray );
+//    namedWindow( "Contours", CV_WINDOW_NORMAL );
+//    imshow( "Contours", drawing );
+    
+
+    
+
+ //   imshow("Canny output",canny_output);
+    imshow("Contours",drawing);
+
     
     waitKey(0);
     return(0);
