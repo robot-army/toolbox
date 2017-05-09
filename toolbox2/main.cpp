@@ -9,7 +9,7 @@ using namespace std;
 
 Mat src; Mat src_gray;
 int thresh = 20;
-int max_thresh = 255;
+int max_thresh = 255;   
 RNG rng(12345);
 
 int morph_elem = 0;
@@ -23,9 +23,9 @@ void thresh_callback(int, void* );
 int main( int argc, char** argv )
 {
     /// Load source image
-    src = imread("test2.jpg", 1 );
-        imshow("Source", src);
- 
+    src = imread("test.jpg", 1 );
+    imshow("Source", src);
+    
     /// Convert image to gray
     cvtColor( src, src_gray, CV_BGR2GRAY );
     imshow("Source Gray",src_gray);
@@ -44,7 +44,7 @@ int main( int argc, char** argv )
     
     vector< vector <Point> > contoursPerspective; // Vector for storing contour
     vector< Vec4i > hierarchyPerspective;
-
+    
     findContours( ThresholdPerspective, contoursPerspective, hierarchyPerspective,CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE ); // Find the contours in the image
     
     // find the largest contour
@@ -59,11 +59,11 @@ int main( int argc, char** argv )
         approxPolyDP(Mat(contoursPerspective[i]),contoursPerspective[i],10,true);
         
         if(contoursPerspective[i].size()==4){
-        double a=contourArea( contoursPerspective[i],false);  //  Find the area of contour
-        if(a>largest_area){
-            largest_area=a;
-            largest_contour_index=i;                //Store the index of largest contour
-        }
+            double a=contourArea( contoursPerspective[i],false);  //  Find the area of contour
+            if(a>largest_area){
+                largest_area=a;
+                largest_contour_index=i;                //Store the index of largest contour
+            }
         }
     }
     
@@ -86,19 +86,19 @@ int main( int argc, char** argv )
         quad_pts.push_back(Point2f(contours_poly[0][3].x,contours_poly[0][3].y));
         quad_pts.push_back(Point2f(contours_poly[0][2].x,contours_poly[0][2].y));
         
-        
-        
-        // This rectangle should be the right size (6" x 0.75" x some factor to boost resolution)
-        
+        // This rectangle should be the right size (6" x 0.75" x some factor to boost resolution) - Output that factor
         
         double length = cv::norm(quad_pts[0]-quad_pts[1]);
         double length2 = cv::norm(quad_pts[1]-quad_pts[3]);
-
+        
         cout << "\nlength " << length << "\nlength2 " << length2 << "\nquad_pts[0] " << quad_pts[0] << "\nquad_pts[1] " << quad_pts[1] << "\naspectratio " << length/length2;
         
         length2 = length/8;
         
-
+        // Reference ruler is 6 inches long = 152.4 mm.
+        
+        cout << "'\nPixels/mm = " << length / 152.4;
+        
         squre_pts.push_back(Point2f(boundRect.x,boundRect.y));
         squre_pts.push_back(Point2f(boundRect.x,boundRect.y+length));
         squre_pts.push_back(Point2f(boundRect.x+length2,boundRect.y));
@@ -109,35 +109,10 @@ int main( int argc, char** argv )
         
         
         warpPerspective(src, src_gray, transmtx, src.size());
-//        Point P1=contours_poly[0][0];
-//        Point P2=contours_poly[0][1];
-//        Point P3=contours_poly[0][2];
-//        Point P4=contours_poly[0][3];
-//        
-//        
-//        line(src,P1,P2, Scalar(0,0,255),1,CV_AA,0);
-//        line(src,P2,P3, Scalar(0,0,255),1,CV_AA,0);
-//        line(src,P3,P4, Scalar(0,0,255),1,CV_AA,0);
-//        line(src,P4,P1, Scalar(0,0,255),1,CV_AA,0);
-//        
-//        rectangle(src,boundRect,Scalar(0,255,0),1,8,0);
-//        rectangle(transformed,boundRect,Scalar(0,255,0),1,8,0);
-//        
-//        imshow("quadrilateral", transformed);
-//        imshow("dst",dstPerspective);
-//        imshow("src",src);
-
+        
     }
-
-            imshow("src_gray and xfmd",src_gray);
     
-    
-    
-//    // Draw the picture
-//    
-//     drawContours( dstPerspective,contoursPerspective, largest_contour_index, Scalar(255,255,255),CV_FILLED, 8, hierarchyPerspective );
-//    
-//    imshow("dst2",dstPerspective);
+    imshow("src_gray and xfmd",src_gray);
     
     // ehhh, 'close' it with a morph size of 2?
     
@@ -148,8 +123,8 @@ int main( int argc, char** argv )
     Mat src_gray_morph;
     morphologyEx( src_gray, src_gray_morph, 0, element );
     
-        imshow("Source Gray Morph", src_gray_morph);
-
+    imshow("Source Gray Morph", src_gray_morph);
+    
     // blur image 3x3 pixels
     
     Mat src_gray_morph_blur;
@@ -161,26 +136,21 @@ int main( int argc, char** argv )
     vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
     
-    /// Detect edges using canny or threshold and get the outside edge (badness)
- //   Canny( src_gray_morph_blur, canny_output, thresh, thresh*2, 3 );
     
-
-
+    // Detect edges using canny or threshold and get the outside edge (badness)
     
-    
+    //   Canny( src_gray_morph_blur, canny_output, thresh, thresh*2, 3 );
     cvtColor( src_gray_morph_blur, src_gray_morph_blur, CV_BGR2GRAY );
-
+    
     threshold(src_gray_morph_blur, canny_output, 150,255,THRESH_BINARY_INV);
     
-    
     imshow("Canny output",canny_output);
-
+    
     /// Find contours
     findContours( canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
     
     // Make somewhere to put the output
     Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
-    
     
     // Sort contours by size
     sort(contours.begin(), contours.end(), [](const vector<Point>& c1, const vector<Point>& c2){
@@ -192,7 +162,7 @@ int main( int argc, char** argv )
     
     for (i = 0; i<contours.size(); i++)
     {
-
+        
         // Pick a random colour
         Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
         
@@ -201,21 +171,8 @@ int main( int argc, char** argv )
         
     }
     
-    
-    // Make windows and show output
-    
-//    char* source_window = "Source";
-//    namedWindow( source_window, CV_WINDOW_NORMAL );
-//    imshow( source_window, src_gray );
-//    namedWindow( "Contours", CV_WINDOW_NORMAL );
-//    imshow( "Contours", drawing );
-    
-
-    
-
- //   imshow("Canny output",canny_output);
     imshow("Contours",drawing);
-
+    imwrite("output.bmp",drawing);
     
     waitKey(0);
     return(0);
