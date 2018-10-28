@@ -1,7 +1,8 @@
 import cv2 as cv
 from unwarp import four_point_transform
 
-# This should fix the image to remove any camera distortion (perspective, skew, etc)
+# This should fix the image to remove any camera distortion (perspective, skew, etc). This should be change to work with
+# a checkerboard of fixed grid pitch.
 
 def fixperspective(threshold_perspective):
     # find all the contours in the image

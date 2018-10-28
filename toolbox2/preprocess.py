@@ -1,5 +1,6 @@
 import cv2 as cv
 
+
 # This should take an image raw from a camera in and preprocess it to produce a thresholded (white on black) image
 # The output image will be used for all further steps. It should have crisp edges and as few noisy bits as possible
 
