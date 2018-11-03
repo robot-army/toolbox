@@ -34,7 +34,7 @@ scalefactor_display = 0.5   #This is on top of the processing one
 
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-imgBIG2 = cv2.imread('checkerboard/IMG_20181101_202640.jpg')
+imgBIG2 = cv2.imread('checkerboard/IMG_20181101_202403.jpg')
 img = cv2.resize(imgBIG2, (0, 0), fx=scalefactor_processing, fy=scalefactor_processing)
 cv2.imshow("testasdf",cv2.resize(img, (0, 0), fx=scalefactor_display, fy=scalefactor_display))
 
@@ -62,7 +62,6 @@ cv2.imshow("unwarp", cv2.resize(unwarp, (0, 0), fx=scalefactor_display, fy=scale
 
 cv2.imshow("undistort",cv2.resize(dst, (0, 0), fx=scalefactor_display, fy=scalefactor_display))
 
-cv2.circle(unwarp,(500,500),100,(0,255,0),10)
 cv2.rectangle(unwarp,(500-300,500-150),(500+396+180 ,500+396+150),(200,200,200),-1)
 
 cv2.imshow("fill",cv2.resize(unwarp, (0, 0), fx=scalefactor_display, fy=scalefactor_display))
@@ -70,13 +69,55 @@ cv2.imshow("fill",cv2.resize(unwarp, (0, 0), fx=scalefactor_display, fy=scalefac
 unwarp[np.where((unwarp==[0,0,0]).all(axis=2))] = [200,200,200]
 cv2.imshow("blacktowhite",cv2.resize(unwarp, (0, 0), fx=scalefactor_display, fy=scalefactor_display))
 
-preproc = preprocess(unwarp)
-cv2.imshow("preproc",cv2.resize(preproc, (0, 0), fx=scalefactor_display, fy=scalefactor_display))
+gray = cv2.cvtColor(unwarp, cv2.COLOR_BGR2GRAY)
+retval, gray = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY_INV)
+cv2.imshow("gray",gray)
+img, contourPerspective, hierarchyPerspective = cv2.findContours(gray, cv2.RETR_EXTERNAL,
+                                                                cv2.CHAIN_APPROX_SIMPLE)
+
+# rect = cv2.minAreaRect(cnt)
+# box = cv2.boxPoints(rect)
+# box = np.int0(box)
+#cv2.drawContours(img,[box],0,(0,0,255),2)
+
+img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+
+largest_area = 0;
+
+for index, val in enumerate(contourPerspective):
+    contourPerspective[index] = cv2.approxPolyDP(val, 2, True)
+    area = cv2.contourArea(val)
+    print("Drawing contour size", area )
+    if (area > largest_area):
+        largest_area = area
+        largestContourIndex = index
+        print("Found a bigger contour index: ", largestContourIndex, " Vals: ",
+              contourPerspective[index])
+
+
+cv2.drawContours(img, contourPerspective, -1, (0,255,0), 10)
+cv2.drawContours(img, contourPerspective,largestContourIndex,(255,0,0),10)
+
+x,y,w,h = cv2.boundingRect(contourPerspective[largestContourIndex])
+cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+cropped = unwarp[y-30:y+h+30, x-30:x+w+30]
+cv2.imshow("cropped", cropped)
+
+rect = cv2.minAreaRect(contourPerspective[largestContourIndex])
+box = cv2.boxPoints(rect)
+box = np.int0(box)
+cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
+
+cv2.namedWindow("contours on threshold", cv2.WINDOW_NORMAL)
+cv2.imshow("contours on threshold", img)
+
+
 
 #TODO - Make this thing crop to contours.
 #TODO - Fix the structure/refactor it so this checkerboard is default.
 #TODO - Fix the processing so it doesn't exclude small contours...this won't work for things with springs in them
 
-orientation(preproc)
+#orientation(preproc)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
