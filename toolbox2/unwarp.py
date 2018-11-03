@@ -33,8 +33,8 @@ def four_point_transform(image, pts):
     checkerboardheight = 396;
     checkerboardwidth = 396;
 
-    imageheight = 3000
-    imagewidth = 3000
+    imageheight = 2000
+    imagewidth = 2000
     #
     # dst = np.array([
     #     [voffset, hoffset],

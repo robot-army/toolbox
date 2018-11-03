@@ -62,19 +62,23 @@ def orientation(src):
         print('Could not open or find the image: ', args.input)
         exit(0)
    # cv.imshow('src', cv.resize(src, (0, 0), fx=0.1, fy=0.1))    # Convert image to grayscale
-    gray = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
+    try:
+        gray = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
+        _, bw = cv.threshold(gray, 50, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
+    except:
+        bw = src
     # Convert image to binary
-    _, bw = cv.threshold(gray, 50, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
     _, contours, _ = cv.findContours(bw, cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
     for i, c in enumerate(contours):
         # Calculate the area of each contour
         area = cv.contourArea(c);
         # Ignore contours that are too small or too large
-        if area < 1e4 or 12000000 < area:
+        if  area < 40 or 3000000 < area:
             continue
         # Draw each contour only for visualisation purposes
+#        src = cv.cvtColor(src, cv.COLOR_GRAY2BGR)
         cv.drawContours(src, contours, i, (0, 0, 255), 2);
         print("drawing area ", area)
         # Find the orientation of each shape
         getOrientation(c, src)
-    cv.imshow('output', cv.resize(src, (0, 0), fx=0.3, fy=0.3))
+    cv.imshow('output', src)

@@ -3,103 +3,36 @@ import cv2
 import glob
 from unwarp import four_point_transform
 import pickle
-import time
-import multiprocessing
-from queue import Queue
-from threading import Thread
+from calibration import generatecalibration
+from preprocess import preprocess
+from orientation import orientation
 
-
-print("multiprocessing says", multiprocessing.cpu_count())
-
-
-# termination criteria
-criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-
-# prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-objp = np.zeros((4*4,3), np.float32)
-objp[:,:2] = np.mgrid[0:4,0:4].T.reshape(-1,2)
-
-# Arrays to store object points and image points from all the images.
-objpoints = [] # 3d point in real world space
-imgpoints = [] # 2d points in image plane.
-
+try:
+    with open('checkerboard/calibration.pickle', 'rb') as f:
+        imagesInput,ret,mtx,dist,rvecs,tvecs = pickle.load(f)
+        print("Existing calibration data found")
+except:
+    print("Error reading file, calibrating")
+    imagesInput = []
+    ret = 0
+    mtx = 0
+    dist = 0
+    rvecs = 0
+    tvecs = 0
 
 images = glob.glob('checkerboard/*.jpg')
 
+if images != imagesInput:
+    print("Input names are different, calibrating")
+    ret, mtx, dist, rvecs, tvecs = generatecalibration(images)
+else:
+    images = imagesInput
+
+#these need to be the same as in the calibration one...they should be able to be independent, but funny things happen
 scalefactor_processing = 0.5
-scalefactor_display = 0.5    #This is on top of the processing one
+scalefactor_display = 0.5   #This is on top of the processing one
 
-start = time.time()
-
-jobs = []
-
-
-def worker():
-    while True:
-
-#        img = cv2.UMat(q.get())
-        img = q.get()
-        print("Starting")
-        img = cv2.resize(img, (0, 0), fx=scalefactor_processing, fy=scalefactor_processing)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-# Find the chess board corners
-        ret, corners = cv2.findChessboardCorners(gray, (4, 4), None)
-# If found, add object points, image points (after refining them)
-        if ret == True:
-            objpoints.append(objp)
- #          corners2 = cv2.UMat.get(cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria))
-            corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
-            imgpoints.append(corners2)
-#        print("Finishing - objp",objp)
-        q.task_done()
-
-q = Queue()
-num_worker_threads = 2
-#on macbook, with 0.5 scaledown and 2 cores -
-# 9.1 s with 2 threads
-# 14 s with 1 thread
-# 9.75 s with 4 threads
-# 9.1 s with 3 threads
-#
-
-for i in range(num_worker_threads):
-    t = Thread(target=worker)
-    t.daemon = True
-    t.start()
-
-img = cv2.imread('checkerboard/IMG_20181101_202640.jpg')
-img = cv2.resize(img, (0, 0), fx=scalefactor_processing, fy=scalefactor_processing)
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-for fname in images:
-    img = cv2.imread(fname, 1)
-    q.put(img)
-q.join()
-
-print(time.time()-start)
-
-ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
-
-calibdata = images,ret,mtx,dist,rvecs,tvecs
-
-#print("Pickling: ",calibdata)
-with open('checkerboard/calibration.pickle', 'wb') as f:
-    images2 = pickle.dump(calibdata,f,pickle.HIGHEST_PROTOCOL)
-
-
-images = 0
-ret = 0
-mtx = 0
-dist = 0
-rvecs = 0
-tvecs = 0
-
-
-with open('checkerboard/calibration.pickle', 'rb') as f:
-    images,ret,mtx,dist,rvecs,tvecs = pickle.load(f)
-
-
-
+criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 imgBIG2 = cv2.imread('checkerboard/IMG_20181101_202640.jpg')
 img = cv2.resize(imgBIG2, (0, 0), fx=scalefactor_processing, fy=scalefactor_processing)
@@ -121,6 +54,7 @@ gray = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
 ret, corners = cv2.findChessboardCorners(gray, (4, 4), None)
 corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
 outercorners = np.array((corners2[0], corners2[3], corners2[12], corners2[15]))
+print("outer corners: ",outercorners)
 
 unwarp = four_point_transform(dst, outercorners.reshape(4, 2))
 
@@ -128,5 +62,21 @@ cv2.imshow("unwarp", cv2.resize(unwarp, (0, 0), fx=scalefactor_display, fy=scale
 
 cv2.imshow("undistort",cv2.resize(dst, (0, 0), fx=scalefactor_display, fy=scalefactor_display))
 
+cv2.circle(unwarp,(500,500),100,(0,255,0),10)
+cv2.rectangle(unwarp,(500-300,500-150),(500+396+180 ,500+396+150),(200,200,200),-1)
+
+cv2.imshow("fill",cv2.resize(unwarp, (0, 0), fx=scalefactor_display, fy=scalefactor_display))
+
+unwarp[np.where((unwarp==[0,0,0]).all(axis=2))] = [200,200,200]
+cv2.imshow("blacktowhite",cv2.resize(unwarp, (0, 0), fx=scalefactor_display, fy=scalefactor_display))
+
+preproc = preprocess(unwarp)
+cv2.imshow("preproc",cv2.resize(preproc, (0, 0), fx=scalefactor_display, fy=scalefactor_display))
+
+#TODO - Make this thing crop to contours.
+#TODO - Fix the structure/refactor it so this checkerboard is default.
+#TODO - Fix the processing so it doesn't exclude small contours...this won't work for things with springs in them
+
+orientation(preproc)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
