@@ -6,7 +6,6 @@ import pickle
 from calibration import generatecalibration
 from preprocess import preprocess
 from orientation import orientation
-#import math
 
 
 forcecalibration = False
@@ -139,11 +138,30 @@ for fname in images:
     if errors == 1:
         print("errors on ",fname)
 
+ #   orientation(cropped)
+
+    gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
+    edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+    cv2.imshow("Canny",edges)
+    minLineLength = 100
+    maxLineGap = 10
+    lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 100, minLineLength, maxLineGap)
+    try:
+        for i in range(1,len(lines)):
+            for x1, y1, x2, y2 in lines[i]:
+                print("vals",x1,y1,x2,y2)
+                cv2.line(cropped, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    except:
+        print("Couldn't find any lines to draw")
+
+    cv2.imshow("lines",cropped)
+
     print("current: ",fname)
     cv2.waitKey(500)
 
     #TODO - Check dimensions of final images
     #TODO - Parallelize the worker doing the processing
+    #TODO - Use both the lines and the PCA to find orientation
     #TODO - Fix the structure/refactor it so this checkerboard is default.
     #TODO - Fix the processing so it doesn't exclude small contours...this won't work for things with springs in them
 

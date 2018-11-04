@@ -43,7 +43,7 @@ def getOrientation(pts, img):
     cntr[0] + 0.02 * eigenvectors[0, 0] * eigenvalues[0, 0], cntr[1] + 0.02 * eigenvectors[0, 1] * eigenvalues[0, 0])
     p2 = (
     cntr[0] - 0.02 * eigenvectors[1, 0] * eigenvalues[1, 0], cntr[1] - 0.02 * eigenvectors[1, 1] * eigenvalues[1, 0])
-    drawAxis(img, cntr, p1, (0, 255, 0), 0.05)
+    drawAxis(img, cntr, p1, (0, 255, 0), 1)
     drawAxis(img, cntr, p2, (255, 255, 0), 0.1)
     angle = atan2(eigenvectors[0, 1], eigenvectors[0, 0])  # orientation in radians
 
@@ -64,7 +64,7 @@ def orientation(src):
    # cv.imshow('src', cv.resize(src, (0, 0), fx=0.1, fy=0.1))    # Convert image to grayscale
     try:
         gray = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
-        _, bw = cv.threshold(gray, 50, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
+        _, bw = cv.threshold(gray, 50, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU)
     except:
         bw = src
     # Convert image to binary
