@@ -49,9 +49,9 @@ def four_point_transform(image, pts):
         [0+hoffset, checkerboardheight - 1+voffset]], dtype = "float32")
 
     # compute the perspective transform matrix and then apply it
-    print("rect",rect,"dst",dst)
+  #  print("rect",rect,"dst",dst)
     M = cv.getPerspectiveTransform(rect, dst)
-    print(M)
+  #  print(M)
 
     warped = cv.warpPerspective(image, M, (imageheight, imagewidth))
 

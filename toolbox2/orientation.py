@@ -17,14 +17,14 @@ def drawAxis(img, p_, q_, colour, scale):
     # Here we lengthen the arrow by a factor of scale
     q[0] = p[0] - scale * hypotenuse * cos(angle)
     q[1] = p[1] - scale * hypotenuse * sin(angle)
-    cv.line(img, (int(p[0]), int(p[1])), (int(q[0]), int(q[1])), colour, 10, cv.LINE_AA)
+    cv.line(img, (int(p[0]), int(p[1])), (int(q[0]), int(q[1])), colour, 2, cv.LINE_AA)
     # create the arrow hooks
     p[0] = q[0] + 9 * cos(angle + pi / 4)
     p[1] = q[1] + 9 * sin(angle + pi / 4)
-    cv.line(img, (int(p[0]), int(p[1])), (int(q[0]), int(q[1])), colour, 10, cv.LINE_AA)
+    cv.line(img, (int(p[0]), int(p[1])), (int(q[0]), int(q[1])), colour, 2, cv.LINE_AA)
     p[0] = q[0] + 9 * cos(angle - pi / 4)
     p[1] = q[1] + 9 * sin(angle - pi / 4)
-    cv.line(img, (int(p[0]), int(p[1])), (int(q[0]), int(q[1])), colour, 10, cv.LINE_AA)
+    cv.line(img, (int(p[0]), int(p[1])), (int(q[0]), int(q[1])), colour, 2, cv.LINE_AA)
 
 def getOrientation(pts, img):
     sz = len(pts)
@@ -73,7 +73,7 @@ def orientation(src):
         # Calculate the area of each contour
         area = cv.contourArea(c);
         # Ignore contours that are too small or too large
-        if  area < 40 or 3000000 < area:
+        if  area < 4000 or 600000 < area:
             continue
         # Draw each contour only for visualisation purposes
 #        src = cv.cvtColor(src, cv.COLOR_GRAY2BGR)
