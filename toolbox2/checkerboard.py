@@ -8,7 +8,21 @@ from preprocess import preprocess
 from orientation import orientation
 
 
+
+
 forcecalibration = False
+
+
+def mse(imageA, imageB):
+    # the 'Mean Squared Error' between the two images is the
+    # sum of the squared difference between the two images;
+    # NOTE: the two images must have the same dimension
+    err = np.sum((imageA.astype("float") - imageB.astype("float")) ** 2)
+    err /= float(imageA.shape[0] * imageA.shape[1])
+
+    # return the MSE, the lower the error, the more "similar"
+    # the two images are
+    return err
 
 try:
     with open('checkerboard/calibration.pickle', 'rb') as f:
@@ -25,6 +39,7 @@ except:
 
 images = glob.glob('checkerboard/*.jpg')
 
+
 if (images != imagesInput) or forcecalibration:
     print("Input names are different, calibrating")
     ret, mtx, dist, rvecs, tvecs = generatecalibration(images)
@@ -34,6 +49,8 @@ else:
 images = glob.glob('checkerboard/*.jpg')
 
 for fname in images:
+    _, imagename = fname.split('/')
+
     errors = 0
     #these need to be the same as in the calibration one...they should be able to be independent, but funny things happen
     scalefactor_processing = 0.5
@@ -42,6 +59,24 @@ for fname in images:
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
     imgBIG2 = cv2.imread(fname)
     img = cv2.resize(imgBIG2, (0, 0), fx=scalefactor_processing, fy=scalefactor_processing)
+
+    manualname = "manual_thresh/"+imagename
+   # print(manualname)
+    manual_thresh = cv2.imread(manualname)
+
+    cv2.imshow("Manualthresh",manual_thresh)
+
+    manual_thresh = cv2.cvtColor(manual_thresh, cv2.COLOR_BGR2GRAY)
+    retval, manual_thresh = cv2.threshold(manual_thresh, 50, 255, cv2.THRESH_BINARY_INV)
+
+    gray2, contoursmanual, hierarchymanual = cv2.findContours(manual_thresh, cv2.RETR_EXTERNAL,
+                                                                       cv2.CHAIN_APPROX_NONE)
+    contourmanual = contoursmanual[0]
+
+    gray3 = cv2.cvtColor(gray2, cv2.COLOR_GRAY2BGR)
+
+    cv2.drawContours(gray3, contoursmanual, -1, (0, 255, 0), 2)
+    cv2.imshow("contours on manual threshold", gray3)
 
     #cv2.imshow("testasdf",cv2.resize(img, (0, 0), fx=scalefactor_display, fy=scalefactor_display))
 
@@ -106,8 +141,8 @@ for fname in images:
             x2 = width // 2
             y2 = height // 2
             distance = np.hypot(x2 - x1, y2 - y1)
-            print("Drawing contour size", area )
-            print("Distance ", distance)
+       #     print("Drawing contour size", area )
+       #     print("Distance ", distance)
             if (area > largest_area) and (distance < 700):
                 largest_area = area
                 largestContourIndex = index
@@ -140,8 +175,28 @@ for fname in images:
 
  #   orientation(cropped)
 
+    cropped = cv2.pyrMeanShiftFiltering(cropped, 20, 45,0 )
+
+
     gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
-    edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+    edges = cv2.Canny(cropped, 50, 150, apertureSize=3)
+
+    retval, gray2 = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)
+
+    print("MSE: ",mse(gray2,manual_thresh))
+
+    gray2, contourPerspective, hierarchyPerspective = cv2.findContours(gray2, cv2.RETR_EXTERNAL,
+                                                                    cv2.CHAIN_APPROX_NONE)
+    gray3 = cv2.cvtColor(gray2, cv2.COLOR_GRAY2BGR)
+
+    for contourautomatic in contourPerspective:
+        ret = cv2.matchShapes(contourmanual, contourautomatic, 1, 0.0)
+       # print("Contourmatching: ",ret)
+        cv2.drawContours(gray3, contourautomatic, -1, (0,255,0), 2)
+        cv2.imshow("contours on cropped threshold", gray3)
+        #cv2.waitKey(0)
+
+
     cv2.imshow("Canny",edges)
     minLineLength = 100
     maxLineGap = 10
@@ -149,15 +204,15 @@ for fname in images:
     try:
         for i in range(1,len(lines)):
             for x1, y1, x2, y2 in lines[i]:
-                print("vals",x1,y1,x2,y2)
+     #           print("vals",x1,y1,x2,y2)
                 cv2.line(cropped, (x1, y1), (x2, y2), (0, 255, 0), 2)
     except:
         print("Couldn't find any lines to draw")
 
     cv2.imshow("lines",cropped)
 
-    print("current: ",fname)
-    cv2.waitKey(500)
+    print("processing: ",fname)
+ #   cv2.waitKey(500)
 
     #TODO - Check dimensions of final images
     #TODO - Parallelize the worker doing the processing
